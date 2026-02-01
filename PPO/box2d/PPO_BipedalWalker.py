@@ -298,7 +298,7 @@ class Config:
         self.batch_size = 2048  # 积累多少步数据进行一次 PPO 更新
         self.gamma = 0.99
         self.gae_lambda = 0.95
-        self.actor_lr = 0.0001
+        self.actor_lr = 0.0003
         self.critic_lr = 0.0003
         self.k_epochs = 10  # 每次更新时压榨数据的次数
         self.eps_clip = 0.2
@@ -370,8 +370,9 @@ def train(cfg, env, agent):
 
 
 def evaluate_policy(agent, cfg):
-    #eval_env = gym.make(cfg.env_name)
-    eval_env = gym.make(cfg.env_name, hardcore=True)
+    eval_env = gym.make(cfg.env_name)
+    #eval_env = gym.make(cfg.env_name, hardcore=True)
+    
     avg_reward = 0.0
     for _ in range(cfg.eval_episodes):
         state, info = eval_env.reset()
@@ -396,8 +397,8 @@ def test(cfg, agent):
         return
 
     # 1. 必须使用 render_mode="human" 才能看到画面
-    # test_env = gym.make(cfg.env_name, render_mode="human")
-    test_env = gym.make(cfg.env_name, hardcore=True, render_mode="human")
+    test_env = gym.make(cfg.env_name, render_mode="human")
+    # test_env = gym.make(cfg.env_name, hardcore=True, render_mode="human")
     # 2. 加载模型权重
     state_dict = torch.load(model_path, map_location=cfg.device)
     agent.actor.load_state_dict(state_dict)
@@ -436,8 +437,8 @@ def env_agent_config(cfg, render_mode=None):
     智能配置函数：自动检测维度，适配设备，并初始化 Agent
     """
     # 创建环境 (支持渲染模式切换)
-    env = gym.make(cfg.env_name, hardcore=True, render_mode=render_mode)
-    # env = gym.make(cfg.env_name, render_mode=render_mode)
+    # env = gym.make(cfg.env_name, hardcore=True, render_mode=render_mode)
+    env = gym.make(cfg.env_name, render_mode=render_mode)
     
     # 设置种子 (传入 env 以同步空间种子)
     all_seed(seed=cfg.seed, env=env)
@@ -508,17 +509,6 @@ def plot_rewards(rewards, cfg, tag="train"):
 if __name__ == "__main__":
     cfg = Config()
     env, agent = env_agent_config(cfg)
-
-    """ # 加载基础版模型权重进行迁移学习
-    base_model_path = "best_model_BipedalWalker-v3.pth" # 确保文件名与你之前保存的一致
-    if os.path.exists(base_model_path):
-        # map_location 确保在没有 GPU 的机器上也能加载权重
-        state_dict = torch.load(base_model_path, map_location=cfg.device)
-        agent.actor.load_state_dict(state_dict)
-        print(f"🚀 已加载基础版权重 {base_model_path}，开始进行 Hardcore 迁移训练...")
-    else:
-        print("💡 未找到基础版模型，将从随机初始化开始训练。")
-    """
     # 训练
     rewards_history = train(cfg, env, agent)
     # 绘图
